@@ -6,7 +6,8 @@ app = Flask(__name__)
 def predecir(temperatura: float, nivel_dolor: int, dias_sintomas: int) -> str:
     """
     Simula un modelo de clasificacion de enfermedad.
-    Retorna uno de: NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA, ENFERMEDAD CRONICA.
+    Retorna uno de: NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA,
+    ENFERMEDAD CRONICA, ENFERMEDAD TERMINAL.
 
     Parametros:
       - temperatura:    temperatura corporal en grados Celsius
@@ -15,21 +16,27 @@ def predecir(temperatura: float, nivel_dolor: int, dias_sintomas: int) -> str:
     """
     score = 0
 
-    if temperatura >= 39.5:
+    if temperatura >= 40.5:
+        score += 8
+    elif temperatura >= 39.5:
         score += 6
     elif temperatura >= 38.5:
         score += 4
     elif temperatura >= 37.5:
         score += 2
 
-    if nivel_dolor >= 8:
+    if nivel_dolor >= 9:
+        score += 4
+    elif nivel_dolor >= 8:
         score += 3
     elif nivel_dolor >= 5:
         score += 2
     elif nivel_dolor >= 3:
         score += 1
 
-    if dias_sintomas > 14:
+    if dias_sintomas > 21:
+        score += 4
+    elif dias_sintomas > 14:
         score += 3
     elif dias_sintomas >= 8:
         score += 2
@@ -42,8 +49,10 @@ def predecir(temperatura: float, nivel_dolor: int, dias_sintomas: int) -> str:
         return "ENFERMEDAD LEVE"
     elif score <= 8:
         return "ENFERMEDAD AGUDA"
-    else:
+    elif score <= 12:
         return "ENFERMEDAD CRÓNICA"
+    else:
+        return "ENFERMEDAD TERMINAL"
 
 
 @app.route("/", methods=["GET"])
