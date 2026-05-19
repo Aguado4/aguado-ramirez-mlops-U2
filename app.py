@@ -1,6 +1,21 @@
-from flask import Flask, render_template, request
+import json
+import os
+from collections import Counter
+from datetime import datetime
+
+from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
+
+STATS_FILE = os.environ.get("STATS_FILE", "predictions.log")
+
+CATEGORIAS = [
+    "NO ENFERMO",
+    "ENFERMEDAD LEVE",
+    "ENFERMEDAD AGUDA",
+    "ENFERMEDAD CRÓNICA",
+    "ENFERMEDAD TERMINAL",
+]
 
 
 def predecir(temperatura: float, nivel_dolor: int, dias_sintomas: int) -> str:
@@ -55,6 +70,23 @@ def predecir(temperatura: float, nivel_dolor: int, dias_sintomas: int) -> str:
         return "ENFERMEDAD TERMINAL"
 
 
+def registrar_prediccion(entrada: dict, resultado: str) -> None:
+    registro = {
+        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "entrada": entrada,
+        "resultado": resultado,
+    }
+    with open(STATS_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(registro, ensure_ascii=False) + "\n")
+
+
+def leer_predicciones() -> list[dict]:
+    if not os.path.exists(STATS_FILE):
+        return []
+    with open(STATS_FILE, "r", encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
@@ -75,10 +107,36 @@ def predecir_endpoint():
             raise ValueError("Los días de síntomas no pueden ser negativos.")
 
         resultado = predecir(temperatura, nivel_dolor, dias_sintomas)
+        registrar_prediccion(
+            {
+                "temperatura": temperatura,
+                "nivel_dolor": nivel_dolor,
+                "dias_sintomas": dias_sintomas,
+            },
+            resultado,
+        )
         return render_template("index.html", resultado=resultado)
 
     except (ValueError, KeyError) as e:
         return render_template("index.html", error=str(e))
+
+
+@app.route("/stats", methods=["GET"])
+def stats_endpoint():
+    predicciones = leer_predicciones()
+    conteo = Counter(p["resultado"] for p in predicciones)
+    total_por_categoria = {cat: conteo.get(cat, 0) for cat in CATEGORIAS}
+    ultimas_5 = predicciones[-5:][::-1]
+    fecha_ultima = predicciones[-1]["timestamp"] if predicciones else None
+
+    return jsonify(
+        {
+            "total_predicciones": len(predicciones),
+            "total_por_categoria": total_por_categoria,
+            "ultimas_5": ultimas_5,
+            "fecha_ultima_prediccion": fecha_ultima,
+        }
+    )
 
 
 if __name__ == "__main__":
