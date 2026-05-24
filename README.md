@@ -1,5 +1,7 @@
 # Predictor de Enfermedades — MLOps U2
 
+*Juan José Aguado y Juan Diego Ramírez*
+
 Servicio web que simula un modelo de clasificación de enfermedades a partir de síntomas del paciente, desarrollado como parte del curso de MLOps (Unidad 2).
 
 ## Contexto del problema
