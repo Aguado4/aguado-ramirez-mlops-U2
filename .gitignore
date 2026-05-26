@@ -4,4 +4,4 @@ __pycache__/
 predictions.log
 .venv/
 venv/
-.env
+.envx
